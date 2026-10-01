@@ -168,6 +168,13 @@ live in [AGENTS.md](AGENTS.md).
 
 ## Platform Compatibility
 
+For Premiere Pro, use `vtc export-premiere-xml .\my-video\edit\edl.json`.
+It writes `edit/<project>.premiere.xml` in Final Cut Pro 7 XML (XMEML) format,
+with linked source video/audio and native media metadata. Import the `.xml`
+through **File > Import** in Premiere. See [docs/premiere-xml.md](docs/premiere-xml.md)
+for timing, supported cuts, and application verification. The existing FCPXML
+export command is unchanged.
+
 Current status:
 
 - Windows: primary tested platform for the CLI workflow.

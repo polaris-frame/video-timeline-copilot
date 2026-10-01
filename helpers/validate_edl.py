@@ -278,7 +278,8 @@ def timeline_timing_issues(timeline: dict, fps: float, min_clip_duration: float)
     return issues
 
 
-def validate(edl_path: Path) -> list[str]:
+def validate(edl_path: Path, *, check_timing: bool = True) -> list[str]:
+    """Validate schema/paths; backends may replace timing checks with exact-rate checks."""
     errors = []
     edl = read_json(edl_path)
     root = edl_path.parent.parent
@@ -381,7 +382,7 @@ def validate(edl_path: Path) -> list[str]:
                         if lane in seen_lanes:
                             errors.append(f"{layer_prefix}.lane duplicates lane {lane} in the same range")
                         seen_lanes.add(lane)
-        if fps > 0 and not any(error.startswith(prefix) for error in errors):
+        if check_timing and fps > 0 and not any(error.startswith(prefix) for error in errors):
             timing_issues = timeline_timing_issues(timeline, fps, min_clip_duration)
             for gap in timing_issues["gaps"]:
                 errors.append(

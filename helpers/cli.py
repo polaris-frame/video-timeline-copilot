@@ -14,6 +14,7 @@ COMMANDS = {
     "validate-edl": ("helpers.validate_edl", "Validate an EDL JSON file"),
     "export-srt": ("helpers.export_srt", "Generate SRT subtitles from an EDL"),
     "export-fcpxml": ("helpers.export_fcpxml", "Export FCPXML from an EDL"),
+    "export-premiere-xml": ("helpers.export_premiere_xml", "Export Premiere Pro FCP7 XML (XMEML) from an EDL"),
     "update-fcpxml": ("helpers.update_fcpxml", "Update an existing FCPXML file in place"),
     "import-fcpxml": ("helpers.import_fcpxml", "Import an edited FCPXML back into an EDL"),
     "render-preview": ("helpers.render_preview", "Render an MP4 preview from an EDL"),
