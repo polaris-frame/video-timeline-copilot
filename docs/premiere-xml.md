@@ -1,5 +1,7 @@
 # Premiere Pro FCP7 XML export
 
+[日本語の詳しい使い方（Windows）](premiere-xml-ja.md)
+
 ```powershell
 vtc inventory .\my-video
 vtc export-premiere-xml .\my-video\edit\edl.json

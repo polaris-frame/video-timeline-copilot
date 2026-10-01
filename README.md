@@ -2,6 +2,9 @@
 
 Create editable video timelines with Codex.
 
+**日本語： [Premiere Pro用XML出力の詳しい使い方（Windows）](docs/premiere-xml-ja.md)**
+— インストール、無音カット、字幕、Premiereへの読み込み、トラブル対処。
+
 <img width="843" height="516" alt="image" src="https://github.com/user-attachments/assets/e7ab61ca-5c17-4325-b861-59f152a4e9a0" />
 
 Drop footage in a folder, ask Codex for an edit, and get structured handoff
