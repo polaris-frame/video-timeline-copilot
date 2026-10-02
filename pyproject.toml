@@ -15,9 +15,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/ludmila-omlopes/video-timeline-copilot"
-Repository = "https://github.com/ludmila-omlopes/video-timeline-copilot"
-Issues = "https://github.com/ludmila-omlopes/video-timeline-copilot/issues"
+Homepage = "https://github.com/polaris-frame/video-timeline-copilot"
+Repository = "https://github.com/polaris-frame/video-timeline-copilot"
+Issues = "https://github.com/polaris-frame/video-timeline-copilot/issues"
 
 [project.optional-dependencies]
 transcribe = ["faster-whisper>=1.1.0"]

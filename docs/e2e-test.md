@@ -12,7 +12,8 @@ their own validated setup checklist.
 Install the skill through the same path a user would normally use:
 
 ```powershell
-npx skills add ludmila-omlopes/video-timeline-copilot -g -a codex
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
+video-timeline-copilot install --agent codex --copy
 ```
 
 For local unpublished testing, push the branch first and install from that
@@ -20,7 +21,8 @@ GitHub source when practical. If you use `npx skills add .`, first remove local
 ignored folders such as `.venv`, because the `skills` CLI copies the local
 directory exactly as it exists on disk.
 
-Verify that only one copy is installed and that it does not contain `.venv`:
+Verify that each registered skill folder contains one `SKILL.md` and no `.venv`
+(the bundled installer registers both current and legacy Codex locations):
 
 ```powershell
 Get-ChildItem -Recurse -Filter SKILL.md $env:USERPROFILE\.agents\skills\video-timeline-copilot
@@ -34,7 +36,7 @@ Expected: exactly one `SKILL.md`, and `.venv` returns `False`.
 Install the Python helper CLI separately from the skill:
 
 ```powershell
-uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 vtc --help
 ```
 

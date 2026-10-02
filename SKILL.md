@@ -65,6 +65,12 @@ explicitly asks for a render.
 
 ## CLI Invocation
 
+This fork's CLI and skill source is `polaris-frame/video-timeline-copilot`,
+branch `feat/premiere-xmeml`. Keep bootstrap and update operations on this
+source to retain Premiere XML support. An older installed CLI may still have
+upstream defaults; reinstall it with the explicit fork/ref command in
+`install.md` before using its bundled update command.
+
 Use the `vtc` command when it is available on `PATH`. The recommended installer
 uses `uv tool install` so `vtc` should be installed as an isolated tool.
 
@@ -90,7 +96,7 @@ bootstrap" commands for the current platform. In short, they install `uv` if
 needed and then run:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 After installation, always verify `vtc --help` works in the current shell before

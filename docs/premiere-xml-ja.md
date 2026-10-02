@@ -103,6 +103,13 @@ uv tool update-shell
 
 `export-premiere-xml` がヘルプに表示されれば準備完了です。この手順はCLIをインストールします。Codex用スキルの登録は別の操作です。以下のPowerShellでの操作にはスキル登録は不要です。
 
+この修正版では `video-timeline-copilot install` と `update` の既定の取得先も
+フォークの `feat/premiere-xmeml` です。`install` はスキル登録のみ、
+`update` はCLIとスキルの更新です。文字起こしを使わない場合は
+`video-timeline-copilot update --no-transcribe` を使います。
+古い版のインストーラーは元作者の取得先を使うため、先に10章の
+ブランチ指定付き再インストールで新版に更新してください。
+
 ## 3. 素材フォルダを用意する
 
 このガイドでは次のフォルダを使います。自分の保存場所やファイル名に置き換えてください。

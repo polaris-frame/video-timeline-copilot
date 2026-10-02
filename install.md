@@ -4,13 +4,22 @@
 
 Recommended:
 
+This fork uses `polaris-frame/video-timeline-copilot` and the
+`feat/premiere-xmeml` branch for both the CLI and skill. The bundled
+`install` and `update` commands default to this source; they do not infer the
+source from a previously installed package. Use both `--repo` and `--ref` to
+select another source. When this branch is merged into the fork's `main`,
+update the installer defaults and installation examples together.
+
 ```bash
-npx skills add ludmila-omlopes/video-timeline-copilot -g -a codex
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
+video-timeline-copilot install --agent codex
 ```
 
-The `npx skills add` command installs the agent skill instructions. The `uv`
-command installs the `vtc` Python helper CLI.
+The `uv` command installs the CLI. The bundled installer registers the agent
+skill from the same fork and branch. Use the bundled installer for this branch:
+`skills add` currently interprets the slash in `feat/premiere-xmeml` as a path
+separator when given a GitHub tree URL.
 
 For local unpublished testing, avoid running `npx skills add .` from a checkout
 that contains `.venv`, `.pytest_cache`, or other ignored build/cache folders.
@@ -53,7 +62,7 @@ if (-not $uv) {
   throw "uv is installed or requested, but uv.exe was not found. Reopen PowerShell or install uv from https://docs.astral.sh/uv/"
 }
 
-& $uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+& $uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 
 $toolDir = "$env:USERPROFILE\.local\bin"
 if (Test-Path $toolDir) {
@@ -74,7 +83,7 @@ if ! command -v uv >/dev/null 2>&1; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
   export PATH="$HOME/.local/bin:$PATH"
 fi
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 export PATH="$HOME/.local/bin:$PATH"
 vtc --help
 ```
@@ -83,7 +92,7 @@ If the agent should run helper commands without installing the tool
 permanently, `uv tool run` is the approved alternative:
 
 ```bash
-uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main" vtc
+uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml" vtc
 ```
 
 ## Bundled installer
@@ -91,13 +100,13 @@ uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/
 This repo also ships a convenience installer:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 video-timeline-copilot install
 ```
 
 This installer:
 
-1. Installs the `vtc` Python CLI directly from GitHub with `uv tool install`.
+1. Fetches the configured skill repository and refreshes its selected branch.
 2. Registers the skill for Claude, Codex, and Open Agent Skills locations.
 3. Checks for `ffmpeg` and `ffprobe`.
 
@@ -105,6 +114,19 @@ Update later with:
 
 ```bash
 video-timeline-copilot update
+```
+
+`install` only registers the skill; the preceding `uv tool install` installs
+the CLI. `update` reinstalls the CLI in its isolated uv tool environment and
+refreshes the skill from the same repository/ref. It includes transcription
+dependencies by default; use `video-timeline-copilot update --no-transcribe`
+for the basic CLI. Tags and commit SHAs remain pinned; branch updates use
+fast-forward only and stop if local Git changes prevent that operation.
+
+An older installation may still default to upstream. To migrate it, first run:
+
+```bash
+uv tool install --force --reinstall --refresh --python 3.12 "video-timeline-copilot @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 Run diagnostics with:
@@ -140,7 +162,7 @@ Windows PowerShell:
 
 ```powershell
 mkdir $env:USERPROFILE\.codex\skills -ErrorAction SilentlyContinue
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git `
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git `
   $env:USERPROFILE\.codex\skills\video-timeline-copilot
 cd $env:USERPROFILE\.codex\skills\video-timeline-copilot
 ```
@@ -152,7 +174,7 @@ macOS/Linux:
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git \
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git \
   ~/.codex/skills/video-timeline-copilot
 cd ~/.codex/skills/video-timeline-copilot
 ```
@@ -162,7 +184,7 @@ cd ~/.codex/skills/video-timeline-copilot
 Recommended isolated install with uv:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 After installation, the `vtc` command is available on `PATH`:
@@ -171,10 +193,10 @@ After installation, the `vtc` command is available on `PATH`:
 vtc --help
 ```
 
-To reinstall from the latest GitHub `main`:
+To reinstall from the latest GitHub `feat/premiere-xmeml`:
 
 ```bash
-uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 ## Dependencies

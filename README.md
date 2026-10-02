@@ -44,22 +44,17 @@ The primary output is an editable timeline, not a flattened MP4.
 
 ## Setup
 
-Install the agent skill with `skills.sh`:
+Install the helper CLI in an isolated uv environment, then register the Codex skill:
 
 ```bash
-npx skills add ludmila-omlopes/video-timeline-copilot -g -a codex
-```
-
-Then install the Python helper CLI with `uv`:
-
-```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
+video-timeline-copilot install --agent codex
 vtc --help
 ```
 
-The `npx skills add` command installs the `SKILL.md` instructions. The `uv`
-command installs the `vtc` helper CLI used for media inventory, transcription,
-EDL validation, subtitles, FCPXML, previews, and Resolve handoff.
+Both commands use this fork and `feat/premiere-xmeml`. The first installs the
+CLI; the second registers the skill. See [install.md](install.md) to migrate
+an older installation that still uses upstream defaults.
 
 When testing from a local checkout, prefer installing from GitHub after pushing
 or use the bundled installer. `npx skills add .` copies the local directory as
@@ -73,18 +68,16 @@ also tells the agent to refresh PATH after installing `uv`/`vtc` and verify
 manual FFmpeg/Python fallback if the user refuses to install `vtc` or `uv` and
 still asks it to continue.
 
-If you prefer one command that installs the helper CLI and registers the skill
-for Claude and Codex, use the bundled installer:
+To register the skill for both Claude and Codex, use:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 video-timeline-copilot install
 ```
 
 Update later with:
 
 ```bash
-npx skills update video-timeline-copilot
 video-timeline-copilot update
 ```
 
@@ -113,7 +106,7 @@ directory; the skill directory stays clean.
 
 ## Manual Install
 
-Most users should use the `skills.sh` and `uv` setup above. Manual setup has two
+Most users should use the bundled installer and `uv` setup above. Manual setup has two
 parts:
 
 1. The **agent skill** is installed by placing this repo under a Claude or
@@ -125,7 +118,7 @@ The recommended manual CLI install uses `uv` instead of a hand-managed virtual
 environment:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 vtc --help
 ```
 
@@ -135,7 +128,7 @@ repository into your agent skill folder.
 ```powershell
 # 1. Clone the repo directly into the Codex skills folder
 mkdir $env:USERPROFILE\.codex\skills -ErrorAction SilentlyContinue
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git `
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git `
   $env:USERPROFILE\.codex\skills\video-timeline-copilot
 cd $env:USERPROFILE\.codex\skills\video-timeline-copilot
 
@@ -147,20 +140,17 @@ Install FFmpeg separately and make sure `ffmpeg` and `ffprobe` are on `PATH`.
 Install the optional Demucs extra when you want local stem separation:
 
 ```bash
-uv tool install --force "video-timeline-copilot[transcribe,demucs] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install --force "video-timeline-copilot[transcribe,demucs] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 On macOS/Linux, the skill registration step is usually:
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git \
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git \
   ~/.codex/skills/video-timeline-copilot
 cd ~/.codex/skills/video-timeline-copilot
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[transcribe]"
+# The CLI was installed separately with uv above.
 vtc --help
 ```
 
