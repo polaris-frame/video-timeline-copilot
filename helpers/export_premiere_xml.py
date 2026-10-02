@@ -135,7 +135,7 @@ def build_premiere_xml(edl_path: Path) -> ET.ElementTree:
         width, height = timeline["resolution"]
         if any(int(v) != v or int(v) <= 0 for v in (width, height)):
             raise ValueError("Timeline resolution must contain positive integers")
-        sequence = ET.SubElement(children, "sequence", {"id": f"sequence-{ti}"})
+        sequence = ET.SubElement(children, "sequence", {"id": f"sequence-{ti}", "explodedTracks": "true"})
         add(sequence, "name", timeline.get("name", f"Timeline {ti}"))
         duration_element = add(sequence, "duration", 0)
         add_rate(sequence, rate)
@@ -149,10 +149,20 @@ def build_premiere_xml(edl_path: Path) -> ET.ElementTree:
         video_format(ET.SubElement(video, "format"), rate, {"width": width, "height": height})
         video_track = ET.SubElement(video, "track")
         audio = ET.SubElement(media, "audio")
+        add(audio, "numOutputChannels", 2)
         sample = ET.SubElement(ET.SubElement(audio, "format"), "samplecharacteristics")
         add(sample, "samplerate", 48000)
+        outputs = ET.SubElement(audio, "outputs")
+        for channel in (1, 2):
+            group = ET.SubElement(outputs, "group")
+            add(group, "index", channel)
+            add(group, "numchannels", 1)
+            add(group, "downmix", 0)
+            add(ET.SubElement(group, "channel"), "index", channel)
         audio_tracks: list[ET.Element] = []
+        track_groups: dict[str, list[tuple[ET.Element, int]]] = {}
         cursor = Fraction(0)
+        frame_cursor = Fraction(0)
         previous_end = 0
         ordered = sorted(timeline["ranges"], key=lambda item: float(item.get("record_start", 0)))
         for ri, item in enumerate(ordered, 1):
@@ -167,26 +177,45 @@ def build_premiere_xml(edl_path: Path) -> ET.ElementTree:
                 assets[path] = (f"file-{len(assets) + 1}", metadata(path, cache.get(path)))
             file_id, info = assets[path]
             start_seconds = Fraction(str(item.get("record_start", cursor)))
-            end_seconds = start_seconds + Fraction(str(item["source_end"])) - Fraction(str(item["source_start"]))
-            start, end = round(start_seconds * rate), round(end_seconds * rate)
-            if start != previous_end or end <= start:
+            # Explicit positions may describe the original seconds-based EDL or
+            # the already quantized timeline. Preserve contiguity in either case.
+            if "record_start" in item and round(start_seconds * rate) not in (round(cursor * rate), previous_end):
                 raise ValueError("Ranges must be contiguous and nonempty at the exact sequence frame rate")
-            minimum = minimum_clip_duration(edl)
-            if end - start < max(1, frames(minimum, rate)):
-                raise ValueError(f"Range is shorter than the minimum {minimum}s")
             source_in = frames(item["source_start"], info["rate"])
             source_out = frames(item["source_end"], info["rate"])
             if source_in < 0 or source_out <= source_in or source_out > info["duration_frames"]:
                 raise ValueError(f"Source range is outside media duration: {path}")
-            while len(audio_tracks) < info["audio_channels"]:
-                audio_tracks.append(ET.SubElement(audio, "track", {"currentExplodedTrackIndex": "0", "totalExplodedTrackCount": "1"}))
-            entries = [(video_track, "video", 1)] + [
-                (audio_tracks[ch - 1], "audio", ch) for ch in range(1, info["audio_channels"] + 1)
+            # Source endpoints define the available frames. Equal rates must
+            # retain exactly that length; mixed rates convert the rational span.
+            frame_cursor += Fraction(source_out - source_in) * rate / info["rate"]
+            start, end = previous_end, round(frame_cursor)
+            minimum = minimum_clip_duration(edl)
+            if end - start < max(1, frames(minimum, rate)):
+                raise ValueError(f"Range is shorter than the minimum {minimum}s")
+            stereo = info["audio_channels"] == 2
+            layout = "stereo" if stereo else "mono"
+            group_tracks = track_groups.setdefault(layout, [])
+            while len(group_tracks) < info["audio_channels"]:
+                index = len(group_tracks)
+                track = ET.SubElement(audio, "track", {
+                    "currentExplodedTrackIndex": str(index if stereo else 0),
+                    "totalExplodedTrackCount": "2" if stereo else "1",
+                    "premiereTrackType": "Stereo" if stereo else "Mono",
+                })
+                add(track, "outputchannelindex", index + 1 if stereo else 1)
+                audio_tracks.append(track)
+                group_tracks.append((track, len(audio_tracks)))
+            entries = [(video_track, "video", 1, 1)] + [
+                (track, "audio", ch, track_index)
+                for ch, (track, track_index) in enumerate(group_tracks[:info["audio_channels"]], 1)
             ]
-            refs = [(f"clip-{ti}-{ri}-{kind}-{ch}", kind, ch, len(track.findall("clipitem")) + 1)
-                    for track, kind, ch in entries]
-            for (track, kind, ch), (clip_id, _, _, _) in zip(entries, refs):
-                clip = ET.SubElement(track, "clipitem", {"id": clip_id})
+            refs = [(f"clip-{ti}-{ri}-{kind}-{ch}", kind, track_index, len(track.findall("clipitem")) + 1)
+                    for track, kind, ch, track_index in entries]
+            for (track, kind, ch, _), (clip_id, _, _, _) in zip(entries, refs):
+                attributes = {"id": clip_id}
+                if kind == "audio":
+                    attributes["premiereChannelType"] = "stereo" if stereo else "mono"
+                clip = ET.SubElement(track, "clipitem", attributes)
                 add(clip, "name", path.name)
                 add(clip, "enabled", "TRUE")
                 add(clip, "duration", info["duration_frames"])
@@ -203,7 +232,8 @@ def build_premiere_xml(edl_path: Path) -> ET.ElementTree:
                         add(link, key, value)
                     if ref_kind == "audio" and info["audio_channels"] == 2:
                         add(link, "groupindex", 1)
-            cursor, previous_end = end_seconds, end
+            cursor += Fraction(str(item["source_end"])) - Fraction(str(item["source_start"]))
+            previous_end = end
         duration_element.text = str(previous_end)
         for track in [video_track, *audio_tracks]:
             add(track, "enabled", "TRUE")

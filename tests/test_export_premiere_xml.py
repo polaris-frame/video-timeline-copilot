@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from pathlib import Path
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -131,7 +132,8 @@ def test_ntsc_long_timeline_has_no_cumulative_rounding_drift(tmp_path):
     path, _, _ = workspace(tmp_path, ranges=ranges)
     root = exporter.build_premiere_xml(path).getroot()
     clips = root.findall(".//video/track/clipitem")
-    assert int(clips[-1].findtext("end")) == 107892
+    assert int(clips[-1].findtext("end")) == 108000
+    assert all(int(c.findtext("end")) - int(c.findtext("start")) == 30 for c in clips)
     assert all(a.findtext("end") == b.findtext("start") for a, b in zip(clips, clips[1:]))
 
 
@@ -203,11 +205,11 @@ def test_ntsc_decimal_alias_is_exact():
     assert exporter.frame_rate("23.976") == Fraction(24000, 1001)
 
 
-def test_missing_record_positions_accumulate_exact_seconds(tmp_path):
+def test_missing_record_positions_accumulate_source_frames(tmp_path):
     ranges = [{"source": "A", "source_start": 0, "source_end": 1} for _ in range(40)]
     path, _, _ = workspace(tmp_path, ranges=ranges)
     root = exporter.build_premiere_xml(path).getroot()
-    assert root.findtext("./project/children/sequence/duration") == "1199"
+    assert root.findtext("./project/children/sequence/duration") == "1200"
 
 
 def test_short_clip_and_gap_rejected_by_exact_timing(tmp_path):
@@ -237,3 +239,82 @@ def test_unc_uri_escaping():
     from pathlib import Path
     uri = Path(r"\\server\share\素材 #1.mov").as_uri()
     assert uri.startswith("file://server/share/") and "%23" in uri and "%E7%B4%A0" in uri
+
+
+def test_reported_25_cut_sequence_preserves_all_source_frames(tmp_path):
+    rows = json.loads((Path(__file__).parent / "fixtures/premiere/reported-cut-frames.json").read_text())
+    assert sum(r["end"] - r["start"] != r["out"] - r["in"] for r in rows) == 12
+    rate = Fraction(30000, 1001)
+    ranges = [{"source": "A", "source_start": float(r["in"] / rate),
+               "source_end": float(r["out"] / rate)} for r in rows]
+    path, _, info = workspace(tmp_path, ranges=ranges)
+    info["duration"] = 287.8
+    (path.parent / "media_index.json").write_text(json.dumps({"media": [info]}))
+    root = exporter.build_premiere_xml(path).getroot()
+    clips = root.findall(".//sequence/media/video/track/clipitem")
+    assert len(clips) == 25
+    for clip, row in zip(clips, rows):
+        assert int(clip.findtext("in")) == row["in"]
+        assert int(clip.findtext("out")) == row["out"]
+        assert int(clip.findtext("end")) - int(clip.findtext("start")) == row["out"] - row["in"]
+    assert all(a.findtext("end") == b.findtext("start") for a, b in zip(clips, clips[1:]))
+    assert int(clips[-1].findtext("end")) - int(clips[-1].findtext("start")) == 47
+    assert root.findtext(".//sequence/duration") == clips[-1].findtext("end")
+
+
+def test_stereo_structure_matches_premiere_export(tmp_path):
+    reference = ET.parse(Path(__file__).parent / "fixtures/premiere/premiere-stereo-reference.xml").getroot()
+    path, _, _ = workspace(tmp_path)
+    sequence = exporter.build_premiere_xml(path).find(".//sequence")
+    assert sequence.get("explodedTracks") == reference.get("explodedTracks")
+    audio = sequence.find("media/audio")
+    expected = reference.find("media/audio")
+    assert audio.findtext("numOutputChannels") == expected.findtext("numOutputChannels")
+    assert ET.tostring(audio.find("outputs")).split() == ET.tostring(expected.find("outputs")).split()
+    for track, ref in zip(audio.findall("track"), expected.findall("track")):
+        assert track.attrib == ref.attrib
+        assert track.findtext("outputchannelindex") == ref.findtext("outputchannelindex")
+        assert all(c.get("premiereChannelType") == "stereo" for c in track.findall("clipitem"))
+
+
+def test_mixed_mono_stereo_use_separate_track_groups(tmp_path):
+    path, edl, info = workspace(tmp_path, channels=1)
+    second = path.parent.parent / "raw/stereo.mp4"
+    second.touch()
+    edl["timelines"][0]["sources"]["B"] = str(second)
+    edl["timelines"][0]["ranges"][1]["source"] = "B"
+    save(path, edl)
+    (path.parent / "media_index.json").write_text(json.dumps({"media": [info, dict(info, path=str(second), audio_channels=2)]}))
+    root = exporter.build_premiere_xml(path).getroot()
+    tracks = root.findall(".//sequence/media/audio/track")
+    assert [t.get("premiereTrackType") for t in tracks] == ["Mono", "Stereo", "Stereo"]
+    stereo = root.findall(".//sequence/media/video/track/clipitem")[1]
+    assert [link.findtext("trackindex") for link in stereo.findall("link")[1:]] == ["2", "3"]
+
+
+@pytest.mark.parametrize("fps,source_fps", [(29.97, "30000/1001"), (23.976, "24000/1001"), (25, "25")])
+def test_fractional_source_boundaries_define_clip_length(tmp_path, fps, source_fps):
+    ranges = [{"source": "A", "source_start": 1.017, "source_end": 2.603},
+              {"source": "A", "source_start": 3.219, "source_end": 4.821}]
+    path, _, _ = workspace(tmp_path, fps=fps, source_fps=source_fps, ranges=ranges)
+    clips = exporter.build_premiere_xml(path).findall(".//sequence/media/video/track/clipitem")
+    assert all(int(c.findtext("end")) - int(c.findtext("start")) ==
+               int(c.findtext("out")) - int(c.findtext("in")) for c in clips)
+
+
+def test_draft_omits_rounded_record_start_and_exports_contiguously(tmp_path, monkeypatch):
+    from helpers.draft_silence_cut import build_edl
+    from helpers.validate_edl import validate
+
+    path, edl, info = workspace(tmp_path)
+    video = Path(edl["timelines"][0]["sources"]["A"])
+    monkeypatch.setattr("helpers.draft_silence_cut.ffprobe", lambda _: info)
+    draft = build_edl(video, tmp_path, path.parent,
+                      [{"start": i * 2 + 0.017, "end": i * 2 + 1.603} for i in range(50)],
+                      project_name="Draft", timeline_name="Cut", style="documentary", settings={})
+    assert all("record_start" not in r for r in draft["timelines"][0]["ranges"])
+    save(path, draft)
+    assert validate(path) == []
+    clips = exporter.build_premiere_xml(path).findall(".//sequence/media/video/track/clipitem")
+    assert all(a.findtext("end") == b.findtext("start") for a, b in zip(clips, clips[1:]))
+    assert build_fcpxml(path).find(".//sequence") is not None

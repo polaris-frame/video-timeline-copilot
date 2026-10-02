@@ -279,7 +279,6 @@ def build_edl(
     fps = parse_frame_rate(media_info.get("avg_frame_rate"))
     width = int(media_info.get("width") or 1920)
     height = int(media_info.get("height") or 1080)
-    record_start = 0.0
     edl_ranges = []
     for index, item in enumerate(ranges, start=1):
         start = round(float(item["start"]), 3)
@@ -289,14 +288,12 @@ def build_edl(
                 "source": "A001",
                 "source_start": start,
                 "source_end": end,
-                "record_start": round(record_start, 3),
                 "track": 1,
                 "beat": f"SPEECH_{index:03d}",
                 "quote": "",
                 "reason": "Draft silence cut kept this range as likely speech/audio activity.",
             }
         )
-        record_start += end - start
 
     return {
         "version": 1,

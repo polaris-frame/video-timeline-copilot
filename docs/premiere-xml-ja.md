@@ -396,6 +396,17 @@ uv tool install --force --reinstall --refresh --python 3.12 "video-timeline-copi
 - 可変フレームレート（VFR）は正確な読み込みを保証しません。必要に応じて固定フレームレート（CFR）素材へ変換します。
 - Premiereで編集した内容を、このFCP7 XMLからEDLに戻す機能はありません。既存の `import-fcpxml` は別のFCPXML形式用です。
 
-Windowsで230件の自動テストが通っています。XML構造、FPS換算、音声リンク、素材情報、パスなどを検証しています。ただし **Premiere本体での読み込み・再生確認は未実施** です。最初は短い素材で、6章の確認項目を試してください。
+Windowsで237件の自動テストが通っています。添付の `test.xml` の25カットと `C0019.xml` のステレオ構造を回帰テストに追加しました。修正後の **Premiere本体での読み込み・再生確認は未実施** です。
+
+### 実機での再検証
+
+1. 更新版をインストールし、以前と同じ設定で `draft-silence-cut` を再実行してEDLを作り直します。新しいEDLは `record_start` を省略し、各exporterが順次配置します。
+2. `vtc validate-edl "C:\video\vtc-test\edit\edl.json"` を実行します。
+3. `vtc export-premiere-xml "C:\video\vtc-test\edit\edl.json" --out "C:\video\vtc-test\edit\test-fixed.xml"` を実行します。
+4. Premiereの新規プロジェクトに `test-fixed.xml` を読み込みます。ステレオ素材がV1＋A1（L/Rステレオ）の形で配置されるか確認します。
+5. カット数、映像と音声のリンク、全接続点のgap/overlap、左右の音声、冒頭と終盤の音ズレを確認します。
+6. 最終クリップの最後のフレームまでコマ送りし、黒い斜線が出ないことを確認します。元の25カットのin/outを使った再現テストでは最後のクリップは47fです。無音検出の設定を変えた場合はカット数や長さも変わります。
+
+同じFPSでは素材のin/outのフレーム数から配置長を決めるため、各クリップで `end-start == out-in` になります。FPSが異なる場合は素材フレーム長を有理数で換算します。モノラルとステレオが混在する場合は別のトラック群になります。
 
 技術仕様は [英語の仕様説明](premiere-xml.md)、変更内容は [PR #1](https://github.com/polaris-frame/video-timeline-copilot/pull/1)を参照してください。

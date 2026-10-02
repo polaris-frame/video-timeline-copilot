@@ -41,14 +41,27 @@ dependencies.
 - Source `in`/`out` and media `duration` are in native source-rate frames.
   Sequence `start`/`end` and sequence `duration` are in sequence-rate frames.
   Endpoints use rational arithmetic with nearest-frame rounding (ties to even).
-  Adjacent cuts share an endpoint; durations are not rounded and accumulated
-  independently, so long NTSC timelines do not accumulate rounding drift.
+  Quantized source endpoints define the available clip length. At equal rates,
+  `end-start == out-in` for every clip. Mixed rates convert that source span
+  using rational arithmetic and accumulate before sequence-frame rounding.
+  Adjacent cuts share an endpoint. Repeating a one-second trim at 29.97 FPS
+  repeats 30 source frames, so 3600 such clips contain 108000 frames.
+  Explicit record positions must be contiguous on either the original EDL
+  seconds grid or the quantized timeline grid; source frames determine the
+  exported positions. New `draft-silence-cut` EDLs omit `record_start` so each
+  backend can place the cuts sequentially on its own frame grid.
 - Embedded source timecode is file metadata. It does **not** offset EDL
   source trims, which remain relative to file frame zero. Drop-frame 29.97
   and 59.94 origins are supported independently of the sequence's NDF display.
 - Native resolution and audio sample rate are preserved in file metadata.
   Sequence resolution comes from the EDL, and sequence audio uses 48 kHz.
-  Each source audio channel becomes one audio clip/track, linked reciprocally
+  Stereo sources become a Premiere exploded stereo pair: two XML tracks with
+  indices 0/1, `totalExplodedTrackCount="2"`, `premiereTrackType="Stereo"`, and
+  `premiereChannelType="stereo"` on their clips. The sequence declares two
+  output channels with left/right output groups and track routing, matching
+  the minimal structure in the supplied Premiere export (`C0019.xml`). Mono
+  and multichannel sources retain separate mono channel tracks, in a separate
+  track group from stereo sources when mixed. Each channel is linked reciprocally
   to video and the other channels through unique `linkclipref` IDs and correct
   one-based track/clip indices. Silent sources create no audio clips.
 - Absolute `file:` URIs use Windows drive/UNC handling and URL escaping from
