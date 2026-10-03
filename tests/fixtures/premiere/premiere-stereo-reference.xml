@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sequence explodedTracks="true">
+  <media>
+    <audio>
+      <numOutputChannels>2</numOutputChannels>
+      <outputs>
+        <group>
+          <index>1</index>
+          <numchannels>1</numchannels>
+          <downmix>0</downmix>
+          <channel>
+            <index>1</index>
+          </channel>
+        </group>
+        <group>
+          <index>2</index>
+          <numchannels>1</numchannels>
+          <downmix>0</downmix>
+          <channel>
+            <index>2</index>
+          </channel>
+        </group>
+      </outputs>
+      <track currentExplodedTrackIndex="0" totalExplodedTrackCount="2" premiereTrackType="Stereo">
+        <clipitem premiereChannelType="stereo" />
+        <outputchannelindex>1</outputchannelindex>
+      </track>
+      <track currentExplodedTrackIndex="1" totalExplodedTrackCount="2" premiereTrackType="Stereo">
+        <clipitem premiereChannelType="stereo" />
+        <outputchannelindex>2</outputchannelindex>
+      </track>
+    </audio>
+  </media>
+</sequence>

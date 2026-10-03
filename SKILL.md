@@ -1,6 +1,6 @@
 ---
 name: video-timeline-copilot
-description: "Use when editing local video footage with an AI agent: remove silence, create rough cuts or highlight edits, generate subtitles, export FCPXML, or build DaVinci Resolve timelines."
+description: "Use when editing local video footage with an AI agent: remove silence, create rough cuts or highlight edits, review full transcripts as numbered blocks, confirm keep/delete selections, generate subtitles, export Premiere XML or FCPXML, or build DaVinci Resolve timelines."
 license: MIT
 metadata:
   author: ludmila-omlopes
@@ -37,7 +37,9 @@ explicitly asks for a render.
 6. Infer sensible defaults from the current folder before asking questions.
 7. All session outputs go in the footage folder's `edit/` directory.
 8. Always validate the EDL before exporting.
-9. Always export SRT and FCPXML after validation.
+9. For an authorized timeline export, export SRT and the requested editor format
+   after validation (Premiere XML for Premiere Pro; FCPXML otherwise). Review-only
+   requests stop at the requested review stage without creating a timeline.
 10. When the user asks for a technical preview or when visual/technical timeline
    integrity is in doubt, render an MP4 preview and run QA before final handoff.
 11. Run final self-evaluation before handoff. If it fails, revise the EDL and
@@ -46,7 +48,7 @@ explicitly asks for a render.
     words, phrases, or sentence fragments block handoff.
 12. If Resolve external scripting is unavailable, stop after validated EDL, SRT,
     and FCPXML generation and tell the user to import the FCPXML manually.
-13. Repeated delivery, false starts, and self-corrections are not useful
+13. In automatic edits, repeated delivery, false starts, and self-corrections are not useful
     story beats. When adjacent transcript phrases restate the same idea, keep
     only the cleanest complete version and discard the earlier/incomplete take.
 14. A Short must end on a deliberate beat. Do not let the source clip stop after
@@ -64,6 +66,12 @@ explicitly asks for a render.
     contain/letterbox layout until the text disappears.
 
 ## CLI Invocation
+
+This fork's CLI and skill source is `polaris-frame/video-timeline-copilot`,
+branch `feat/premiere-xmeml`. Keep bootstrap and update operations on this
+source to retain Premiere XML support. An older installed CLI may still have
+upstream defaults; reinstall it with the explicit fork/ref command in
+`install.md` before using its bundled update command.
 
 Use the `vtc` command when it is available on `PATH`. The recommended installer
 uses `uv tool install` so `vtc` should be installed as an isolated tool.
@@ -90,7 +98,7 @@ bootstrap" commands for the current platform. In short, they install `uv` if
 needed and then run:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 After installation, always verify `vtc --help` works in the current shell before
@@ -108,6 +116,20 @@ If the user approves using `uv` without installing the tool permanently, run
 individual helper commands through the `uv tool run` invocation listed in
 `install.md`. Treat `uv tool run` as an approved helper-CLI path, not as
 permission to bypass the helper workflow.
+
+## Text-Based Block Review
+
+When the user wants full transcription, numbered blocks, proposed selections,
+and human keep/delete decisions, read `docs/text-based-review.md`. Follow that
+review workflow before writing an EDL. Explicit selections take precedence over
+automatic cleanup rules, including principle 13. A request for transcription,
+blocks, and proposals authorizes those review artifacts only; wait for the
+user's selections and export instruction before generating the timeline.
+
+Before transcription on each PC, use the environment and existing-model checks
+in `install.md` ("Environment readiness and existing models"). Reuse compatible
+local models and caches; install only missing components within existing setup
+authorization and environment permissions.
 
 ## User-Facing Request Handling
 
@@ -231,7 +253,8 @@ there is ambiguity.
    video analysis exists, treat visual matching as limited and say so when
    framing or visual selection materially affects the result.
 
-6. Write `edit/edl.json` from the user's requested outcome. Combine transcript
+6. For text-based review, complete the review and obtain the user's export
+   instruction first. Then write `edit/edl.json` from the user's requested outcome. Combine transcript
    timing with visual-analysis signals when selecting clips. For draft silence
    removal, use the deterministic helper:
 

@@ -9,8 +9,8 @@ import sys
 
 
 TOOL_NAME = "video-timeline-copilot"
-REPO_URL = "https://github.com/ludmila-omlopes/video-timeline-copilot.git"
-DEFAULT_REF = "main"
+REPO_URL = "https://github.com/polaris-frame/video-timeline-copilot.git"
+DEFAULT_REF = "feat/premiere-xmeml"
 MANAGED_MARKER = ".video-timeline-copilot-managed"
 
 
@@ -57,8 +57,11 @@ def sync_repo(home: Path, repo: str, ref: str) -> Path:
 
     if ref:
         run(["git", "-C", str(destination), "checkout", ref])
-        if ref == "main":
-            run(["git", "-C", str(destination), "pull", "--ff-only", "origin", "main"])
+        # Refresh any checked-out branch, including the Premiere feature branch.
+        # Tags and commit SHAs remain pinned in detached HEAD mode.
+        branch = run(["git", "-C", str(destination), "rev-parse", "--abbrev-ref", "HEAD"], capture=True)
+        if branch.stdout.strip() == ref:
+            run(["git", "-C", str(destination), "pull", "--ff-only", "origin", ref])
 
     if not (destination / "SKILL.md").exists():
         raise RuntimeError(f"expected SKILL.md in {destination}")
@@ -230,7 +233,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    command = args.command or "install"
+    if args.command is None:
+        args = parser.parse_args(["install"])
+    command = args.command
     try:
         if command == "install":
             install(args)

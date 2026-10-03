@@ -4,13 +4,22 @@
 
 Recommended:
 
+This fork uses `polaris-frame/video-timeline-copilot` and the
+`feat/premiere-xmeml` branch for both the CLI and skill. The bundled
+`install` and `update` commands default to this source; they do not infer the
+source from a previously installed package. Use both `--repo` and `--ref` to
+select another source. When this branch is merged into the fork's `main`,
+update the installer defaults and installation examples together.
+
 ```bash
-npx skills add ludmila-omlopes/video-timeline-copilot -g -a codex
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
+video-timeline-copilot install --agent codex
 ```
 
-The `npx skills add` command installs the agent skill instructions. The `uv`
-command installs the `vtc` Python helper CLI.
+The `uv` command installs the CLI. The bundled installer registers the agent
+skill from the same fork and branch. Use the bundled installer for this branch:
+`skills add` currently interprets the slash in `feat/premiere-xmeml` as a path
+separator when given a GitHub tree URL.
 
 For local unpublished testing, avoid running `npx skills add .` from a checkout
 that contains `.venv`, `.pytest_cache`, or other ignored build/cache folders.
@@ -53,7 +62,7 @@ if (-not $uv) {
   throw "uv is installed or requested, but uv.exe was not found. Reopen PowerShell or install uv from https://docs.astral.sh/uv/"
 }
 
-& $uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+& $uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 
 $toolDir = "$env:USERPROFILE\.local\bin"
 if (Test-Path $toolDir) {
@@ -74,7 +83,7 @@ if ! command -v uv >/dev/null 2>&1; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
   export PATH="$HOME/.local/bin:$PATH"
 fi
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 export PATH="$HOME/.local/bin:$PATH"
 vtc --help
 ```
@@ -83,7 +92,7 @@ If the agent should run helper commands without installing the tool
 permanently, `uv tool run` is the approved alternative:
 
 ```bash
-uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main" vtc
+uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml" vtc
 ```
 
 ## Bundled installer
@@ -91,13 +100,13 @@ uv tool run --from "video-timeline-copilot[transcribe] @ git+https://github.com/
 This repo also ships a convenience installer:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 video-timeline-copilot install
 ```
 
 This installer:
 
-1. Installs the `vtc` Python CLI directly from GitHub with `uv tool install`.
+1. Fetches the configured skill repository and refreshes its selected branch.
 2. Registers the skill for Claude, Codex, and Open Agent Skills locations.
 3. Checks for `ffmpeg` and `ffprobe`.
 
@@ -105,6 +114,19 @@ Update later with:
 
 ```bash
 video-timeline-copilot update
+```
+
+`install` only registers the skill; the preceding `uv tool install` installs
+the CLI. `update` reinstalls the CLI in its isolated uv tool environment and
+refreshes the skill from the same repository/ref. It includes transcription
+dependencies by default; use `video-timeline-copilot update --no-transcribe`
+for the basic CLI. Tags and commit SHAs remain pinned; branch updates use
+fast-forward only and stop if local Git changes prevent that operation.
+
+An older installation may still default to upstream. To migrate it, first run:
+
+```bash
+uv tool install --force --reinstall --refresh --python 3.12 "video-timeline-copilot @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 Run diagnostics with:
@@ -140,7 +162,7 @@ Windows PowerShell:
 
 ```powershell
 mkdir $env:USERPROFILE\.codex\skills -ErrorAction SilentlyContinue
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git `
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git `
   $env:USERPROFILE\.codex\skills\video-timeline-copilot
 cd $env:USERPROFILE\.codex\skills\video-timeline-copilot
 ```
@@ -152,7 +174,7 @@ macOS/Linux:
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/ludmila-omlopes/video-timeline-copilot.git \
+git clone --branch feat/premiere-xmeml https://github.com/polaris-frame/video-timeline-copilot.git \
   ~/.codex/skills/video-timeline-copilot
 cd ~/.codex/skills/video-timeline-copilot
 ```
@@ -162,7 +184,7 @@ cd ~/.codex/skills/video-timeline-copilot
 Recommended isolated install with uv:
 
 ```bash
-uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 After installation, the `vtc` command is available on `PATH`:
@@ -171,10 +193,10 @@ After installation, the `vtc` command is available on `PATH`:
 vtc --help
 ```
 
-To reinstall from the latest GitHub `main`:
+To reinstall from the latest GitHub `feat/premiere-xmeml`:
 
 ```bash
-uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"
+uv tool install --force "video-timeline-copilot[transcribe] @ git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"
 ```
 
 ## Dependencies
@@ -226,3 +248,41 @@ Start Resolve before running:
 ```bash
 vtc build-resolve-project /path/to/footage/edit/edl.json
 ```
+
+## Environment readiness and existing models
+
+Check each PC before processing: `vtc --help`, `vtc doctor`, FFmpeg/FFprobe,
+source readability, and transcription dependencies in the Python environment
+actually used by `vtc`. A registered skill alone does not establish readiness.
+Reuse the installed CLI when it supports this fork's required commands. Install
+or repair only missing components in its isolated environment; do not install
+packages globally. Existing user authorization to set up missing dependencies
+continues to apply; ask only for missing authorization or required permissions.
+
+Before downloading a model, inspect user-specified locations, configured model
+paths and the Hugging Face cache (`HF_HOME`/`HF_HUB_CACHE`, or the default
+`~/.cache/huggingface/hub`). Prefer bounded searches in these locations over
+scanning an entire drive. Reuse a complete compatible faster-whisper/CTranslate2
+snapshot containing model weights, configuration and tokenizer/vocabulary files.
+OpenAI Whisper `.pt` and whisper.cpp models require another backend or conversion;
+a file extension alone does not establish compatibility.
+
+Pass the existing snapshot directory to `vtc transcribe --model`, with the user's
+language and appropriate device/compute options. For an offline reuse check set
+`HF_HUB_OFFLINE=1` in the current process; do not silently download a replacement.
+Run a short actual transcription on an original-source excerpt before a long
+job. An import or model-load check alone does not detect inference failures.
+
+For CUDA, check compatible runtime libraries as well as GPU availability. Reuse
+existing compatible runtime directories through the current session's PATH when
+appropriate. Do not permanently alter system PATH just to run a check. If GPU
+inference fails, report the cause and use supported CPU settings when practical.
+If a dependency API mismatch occurs (for example PyAV `metadata_errors` support),
+identify the failing package/version and repair a compatible version in the CLI's
+isolated environment, then repeat the short inference check. Do not redownload
+a healthy model to fix a runtime or package error.
+
+If no compatible model exists, choose a model suited to the available hardware
+and obtain any missing download authorization. Record the environment and model
+used in the session output so later PCs can repeat the checks without assuming
+identical absolute paths.

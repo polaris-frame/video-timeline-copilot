@@ -37,7 +37,7 @@ def require_demucs() -> None:
     raise RuntimeError(
         "demucs is not installed. Install this helper with the Demucs extra, for example: "
         'uv tool install "video-timeline-copilot[transcribe,demucs] @ '
-        'git+https://github.com/ludmila-omlopes/video-timeline-copilot.git@main"'
+        'git+https://github.com/polaris-frame/video-timeline-copilot.git@feat/premiere-xmeml"'
     )
 
 
